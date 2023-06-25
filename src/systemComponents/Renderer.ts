@@ -1,5 +1,5 @@
 import * as Three from "three";
-import { callMultipleActions } from "./utils";
+import { callMultipleActions } from "../utils";
 import { CSS2DRenderer } from "three/examples/jsm/renderers/CSS2DRenderer";
 
 export type TickerFunction = (deltaTime: number) => void;

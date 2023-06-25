@@ -27,3 +27,12 @@ export function callMultipleFunctions<Args extends readonly unknown[]>(
 export function hasValue<T>(value: T): value is NonNullable<T> {
   return value !== undefined && value !== null;
 }
+
+export function requireProperty<K extends string>(o: object, k: K): unknown {
+  if (k in o) return (o as Record<K, unknown>)[k];
+  throw new Error(`key ${k} was not given in object`);
+}
+
+export interface IDisposable {
+  dispose(): void;
+}
