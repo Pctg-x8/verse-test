@@ -1,0 +1,21 @@
+.overlayMenuItem {
+  padding: 0.2rem 0.8rem;
+  padding-left: 0.4rem;
+  background: transparent;
+  color: white;
+  cursor: pointer;
+  border-radius: 2px;
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(to bottom, #3af, #27d);
+  }
+
+  &:disabled {
+    color: #ccc;
+    cursor: default;
+  }
+}
+
+body {
+  background: black;
+}

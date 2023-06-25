@@ -1,7 +1,7 @@
 import * as Three from "three";
 import * as v3 from "@verseengine/verse-three";
 import * as v3ui from "@verseengine/verse-three-ui";
-import type { Renderer } from "./Renderer";
+import type { CleanupFunction, Renderer } from "./Renderer";
 
 const ANIMATION_MAP = {
   idle: "./assets/animation/idle.fbx",
@@ -18,17 +18,20 @@ export class MetaverseEngine {
   readonly collisionObjects: Three.Object3D[] = [];
   readonly teleportTargetObjects: Three.Object3D[] = [];
   private readonly adapter: v3.EnvAdapter;
+  private readonly boundScene: Three.Scene;
 
   constructor(
     private readonly renderer: Renderer,
+    scene: Three.Scene,
+    mainCamera: Three.PerspectiveCamera,
     cameraContainer: Three.Object3D,
     cameraRig: Three.Object3D,
     options?: v3.DefaultEnvAdapterOptions
   ) {
     this.adapter = new v3.DefaultEnvAdapter(
       renderer.object,
-      renderer.rootScene,
-      renderer.mainCamera,
+      scene,
+      mainCamera,
       cameraContainer,
       cameraRig,
       () => this.collisionBoxes,
@@ -36,12 +39,13 @@ export class MetaverseEngine {
       () => this.teleportTargetObjects,
       options
     );
+    this.boundScene = scene;
   }
 
   async start(defaultAvatarUrl: string, presetAvatars: v3ui.PresetAvatar[]) {
     const res = await v3.start(
       this.adapter,
-      this.renderer.rootScene,
+      this.boundScene,
       MetaverseEngine.VERSE_WASM_URL,
       MetaverseEngine.VERSE_ENTRACE_SERVER_URL,
       defaultAvatarUrl,
@@ -67,5 +71,10 @@ export class MetaverseEngine {
 
   addTeleportTargetObjects(...objects: Three.Object3D[]) {
     this.teleportTargetObjects.push(...objects);
+  }
+
+  observeTextDataChanges(handler: (issuer: v3.OtherPerson, textData: string) => void): CleanupFunction {
+    this.adapter.addTextDataChangedListener(handler);
+    return () => this.adapter.removeTextDataChangedListener(handler);
   }
 }

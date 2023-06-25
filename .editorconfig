@@ -3,6 +3,6 @@ insert_final_newline = true
 end_of_line = lf
 charset = utf-8
 
-[*.{js,ts,jsx,tsx}]
+[*.{js,ts,jsx,tsx,scss}]
 indent_size = 2
 indent_style = space
