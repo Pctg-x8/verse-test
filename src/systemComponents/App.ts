@@ -3,6 +3,7 @@ import { IdentifiedUser } from "../models/IdentifiedUser";
 import { PlayerSignalState } from "../models/PlayerSignalState";
 import { PlayerState } from "../models/PlayerState";
 import { ReactiveValue, UnorderedSignal } from "../utils/reactive";
+import { PlayerTextDataEncoder } from "../models/PlayerTextDataEncoding";
 
 export default class App {
   static readonly Instance: App = new App();
@@ -41,16 +42,9 @@ export default class App {
     const cuser = this.currentUser;
     if (!cuser) return "";
 
-    const o: Record<string, unknown> = {
-      user: cuser.toJson(),
-      state: this._currentPlayerState.value.toJson(),
-    };
-    if (this._currentSignal) {
-      o["signal"] = this._currentSignal.toJson();
-      o["signalNonce"] = this._clientSignalNonce;
-    }
-
-    return JSON.stringify(o);
+    const encoder = new PlayerTextDataEncoder(cuser, this._currentPlayerState.value);
+    if (this._currentSignal) encoder.withSignal(this._currentSignal, this._clientSignalNonce);
+    return encoder.encode();
   }
 
   updatePlayerSignal(newSignal: PlayerSignalState) {

@@ -15,6 +15,7 @@ import { Degrees, ThreeVector3Wrapper } from "../utils/three";
 import { OverlayUIView, OverlayUIViewModel } from "../views/OverlayUIView";
 import WebCamera from "../systemComponents/WebCamera";
 import App from "../systemComponents/App";
+import { PlayerTextDataLazyDecoder } from "../models/PlayerTextDataEncoding";
 
 function createSky() {
   const o = new Sky();
@@ -43,7 +44,7 @@ export default class MainScene extends AppScene {
   private readonly cameraContainer: Three.Object3D;
   private readonly player: Three.Object3D;
   private readonly baseGround: Three.Object3D;
-  private readonly screenViewPlane: Three.Mesh;
+  private readonly screenViewPlaneMaterial: Three.MeshLambertMaterial;
   private readonly uiPlane: Three.Object3D;
 
   static async initialize() {
@@ -78,21 +79,21 @@ export default class MainScene extends AppScene {
       mvEngine.observeTextDataChanges((issuer, textData) => {
         console.log("text data changes", textData, issuer);
 
-        const data = JSON.parse(textData) as Record<"state", object> & Record<"user", object> & object;
-        const user = IdentifiedUser.fromJson(data["user"]);
-        const state = PlayerState.fromJson(data["state"]);
-        if (state.screenViewOwner) {
+        const decoder = PlayerTextDataLazyDecoder.fromString(textData);
+        if (decoder.state.screenViewOwner) {
           App.Instance.isAnyoneScreenViewOwner = true;
         }
-        if ("signal" in data) {
-          const signal = PlayerSignalState.fromJson(data["signal"]);
-          console.log("requested signal", signal);
+
+        const signal = decoder.signal;
+        if (signal) {
+          console.log("signal", signal);
+
           if (
             signal instanceof PlayerRequestScreenViewOwnerSignalState &&
             App.Instance.isCurrentPlayerScreenViewOwner
           ) {
             console.log("showPopup");
-            const vm = new GrantConfirmPopupViewModel(user.identifier);
+            const vm = new GrantConfirmPopupViewModel(decoder.user.identifier);
             scene.uiPlane.add(new GrantConfirmPopupView(vm));
           }
 
@@ -117,6 +118,7 @@ export default class MainScene extends AppScene {
       })
     );
 
+    // WebCamera制御
     scene.registerUnloadActions(
       App.Instance.currentPlayerState.observe(() => {
         if (App.Instance.isCurrentPlayerScreenViewOwner) {
@@ -126,8 +128,8 @@ export default class MainScene extends AppScene {
         }
       }),
       WebCamera.Instance.videoTexture.observe(tex => {
-        (scene.screenViewPlane.material as Three.MeshLambertMaterial).map = tex;
-        (scene.screenViewPlane.material as Three.MeshLambertMaterial).needsUpdate = true;
+        scene.screenViewPlaneMaterial.map = tex;
+        scene.screenViewPlaneMaterial.needsUpdate = true;
       })
     );
 
@@ -149,12 +151,10 @@ export default class MainScene extends AppScene {
     this.add(this.player);
 
     // setup screen view
-    this.screenViewPlane = new Three.Mesh(
-      new Three.PlaneGeometry(16, 9, 1, 1),
-      new Three.MeshLambertMaterial({ color: 0xffffff })
-    );
-    this.screenViewPlane.position.set(0.0, 5, -2.0);
-    this.add(this.screenViewPlane);
+    this.screenViewPlaneMaterial = new Three.MeshLambertMaterial({ color: 0xffffff });
+    const screenViewPlane = new Three.Mesh(new Three.PlaneGeometry(16, 9, 1, 1), this.screenViewPlaneMaterial);
+    screenViewPlane.position.set(0.0, 5, -2.0);
+    this.add(screenViewPlane);
 
     // setup overlay ui
     this.uiPlane = new Three.Object3D();
